@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.springframework.org/schema/context
+           http://www.springframework.org/schema/context/spring-context.xsd
+           http://www.springframework.org/schema/mvc
+           http://www.springframework.org/schema/mvc/spring-mvc.xsd">
+
+    <!-- Component scan for Controllers -->
+    <context:component-scan base-package="com.laundry.controller"/>
+    <context:component-scan base-package="com.laundry.config"/>
+    <context:component-scan base-package="com.laundry.interceptor"/>
+
+    <!-- Enable annotation-driven MVC -->
+    <mvc:annotation-driven>
+        <mvc:message-converters>
+            <bean class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
+                <property name="objectMapper" ref="objectMapper"/>
+            </bean>
+        </mvc:message-converters>
+    </mvc:annotation-driven>
+
+    <!-- CORS Configuration -->
+    <mvc:cors>
+        <mvc:mapping path="/api/**"
+                     allowed-origins="*"
+                     allowed-methods="GET, POST, PUT, DELETE, OPTIONS"
+                     allowed-headers="*"
+                     allow-credentials="false"
+                     max-age="3600"/>
+    </mvc:cors>
+
+    <!-- Interceptors -->
+    <mvc:interceptors>
+        <mvc:interceptor>
+            <mvc:mapping path="/api/**"/>
+            <mvc:exclude-mapping path="/api/auth/**"/>
+            <mvc:exclude-mapping path="/api/health"/>
+            <bean class="com.laundry.interceptor.AuthInterceptor"/>
+        </mvc:interceptor>
+    </mvc:interceptors>
+
+    <!-- Static Resources -->
+    <mvc:resources mapping="/static/**" location="/static/"/>
+
+    <!-- View Resolver (if needed) -->
+    <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+        <property name="prefix" value="/WEB-INF/views/"/>
+        <property name="suffix" value=".jsp"/>
+    </bean>
+
+</beans>

@@ -1,0 +1,194 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="洗衣店订单管理系统 - 个人中心">
+    <title>个人中心 - 洗衣店管理</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/main.css?v=2">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <div class="sidebar-logo-icon">🧺</div>
+                    <span class="sidebar-logo-text">洗衣店</span>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-title">主菜单</div>
+                    <a href="dashboard.html" class="nav-item"><span class="nav-item-icon">📊</span><span class="nav-item-text">控制台</span></a>
+                    <a href="orders.html" class="nav-item"><span class="nav-item-icon">📋</span><span class="nav-item-text">订单管理</span></a>
+                    <a href="customers.html" class="nav-item"><span class="nav-item-icon">👥</span><span class="nav-item-text">客户管理</span></a>
+                    <a href="services.html" class="nav-item"><span class="nav-item-icon">🛠️</span><span class="nav-item-text">服务项目</span></a>
+                </div>
+                <div class="nav-section" id="adminSection">
+                    <div class="nav-section-title">系统管理</div>
+                    <a href="users.html" class="nav-item"><span class="nav-item-icon">👤</span><span class="nav-item-text">用户管理</span></a>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-section-title">账户</div>
+                    <a href="profile.html" class="nav-item active"><span class="nav-item-icon">⚙️</span><span class="nav-item-text">个人中心</span></a>
+                    <a href="javascript:void(0)" class="nav-item" onclick="auth.logout()"><span class="nav-item-icon">🚪</span><span class="nav-item-text">退出登录</span></a>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left"><h1 class="header-title">个人中心</h1></div>
+                <div class="header-right">
+                    <div class="header-user" id="headerUser">
+                        <div class="user-avatar" id="userAvatar">AD</div>
+                        <div class="user-info">
+                            <span class="user-name" id="userName">管理员</span>
+                            <span class="user-role" id="userRole">管理员</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="page-content">
+                <div class="card-grid">
+                    <div class="card">
+                        <div class="card-header"><h3 class="card-title">个人信息</h3></div>
+                        <div class="card-body">
+                            <form id="profileForm">
+                                <div class="form-group">
+                                    <label class="form-label">用户名</label>
+                                    <input type="text" class="form-control" id="profileUsername" readonly>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">真实姓名</label>
+                                    <input type="text" class="form-control" name="realName" id="profileRealName">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">电话</label>
+                                    <input type="tel" class="form-control" name="phone" id="profilePhone">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">邮箱</label>
+                                    <input type="email" class="form-control" name="email" id="profileEmail">
+                                </div>
+                                <button type="submit" class="btn btn-primary">保存修改</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header"><h3 class="card-title">修改密码</h3></div>
+                        <div class="card-body">
+                            <form id="passwordForm">
+                                <div class="form-group">
+                                    <label class="form-label required">当前密码</label>
+                                    <input type="password" class="form-control" name="oldPassword" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label required">新密码</label>
+                                    <input type="password" class="form-control" name="newPassword" minlength="6" required>
+                                    <small class="text-muted">至少6个字符</small>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label required">确认新密码</label>
+                                    <input type="password" class="form-control" name="confirmPassword" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary">修改密码</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/utils.js"></script>
+    <script src="../js/components.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+        if (!auth.requireAuth()) throw new Error('未登录');
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const user = auth.getUser();
+            if (user) {
+                document.getElementById('userName').textContent = user.realName || user.username;
+                document.getElementById('userRole').textContent = user.role === 1 ? '管理员' : '员工';
+                document.getElementById('userAvatar').textContent = utils.getInitials(user.realName || user.username);
+            }
+            if (!auth.isAdmin()) document.getElementById('adminSection').style.display = 'none';
+
+            await loadProfile();
+        });
+
+        async function loadProfile() {
+            try {
+                const response = await userApi.getProfile();
+                if (response.code === 200) {
+                    const user = response.data;
+                    document.getElementById('profileUsername').value = user.username;
+                    document.getElementById('profileRealName').value = user.realName || '';
+                    document.getElementById('profilePhone').value = user.phone || '';
+                    document.getElementById('profileEmail').value = user.email || '';
+                }
+            } catch (error) { Toast.error('错误', error.message); }
+        }
+
+        document.getElementById('profileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                realName: document.getElementById('profileRealName').value,
+                phone: document.getElementById('profilePhone').value,
+                email: document.getElementById('profileEmail').value
+            };
+
+            if (data.phone && !utils.isValidPhone(data.phone)) {
+                Toast.warning('验证提示', '手机号码格式不正确');
+                return;
+            }
+            if (data.email && !utils.isValidEmail(data.email)) {
+                Toast.warning('验证提示', '邮箱格式不正确');
+                return;
+            }
+
+            try {
+                const response = await userApi.updateProfile(data);
+                if (response.code === 200) {
+                    Toast.success('成功', '个人信息已更新');
+                    auth.updateUser(response.data);
+                    document.getElementById('userName').textContent = response.data.realName || response.data.username;
+                    document.getElementById('userAvatar').textContent = utils.getInitials(response.data.realName || response.data.username);
+                }
+            } catch (error) { Toast.error('错误', error.message); }
+        });
+
+        document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const oldPassword = e.target.querySelector('[name="oldPassword"]').value;
+            const newPassword = e.target.querySelector('[name="newPassword"]').value;
+            const confirmPassword = e.target.querySelector('[name="confirmPassword"]').value;
+
+            if (newPassword !== confirmPassword) {
+                Toast.warning('验证提示', '两次输入的密码不一致');
+                return;
+            }
+
+            if (newPassword.length < 6) {
+                Toast.warning('验证提示', '新密码长度至少6个字符');
+                return;
+            }
+
+            try {
+                await userApi.changePassword(oldPassword, newPassword);
+                Toast.success('成功', '密码已修改，请重新登录');
+                e.target.reset();
+                setTimeout(() => auth.logout(), 2000);
+            } catch (error) { Toast.error('错误', error.message); }
+        });
+    </script>
+</body>
+</html>

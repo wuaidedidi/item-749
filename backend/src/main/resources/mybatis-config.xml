@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+    <settings>
+        <!-- Enable camelCase mapping -->
+        <setting name="mapUnderscoreToCamelCase" value="true"/>
+        <!-- Enable lazy loading -->
+        <setting name="lazyLoadingEnabled" value="true"/>
+        <!-- Disable aggressive lazy loading -->
+        <setting name="aggressiveLazyLoading" value="false"/>
+        <!-- Enable cache -->
+        <setting name="cacheEnabled" value="true"/>
+        <!-- Log implementation -->
+        <setting name="logImpl" value="SLF4J"/>
+        <!-- Use generated keys -->
+        <setting name="useGeneratedKeys" value="true"/>
+        <!-- Default executor type -->
+        <setting name="defaultExecutorType" value="REUSE"/>
+        <!-- Default statement timeout -->
+        <setting name="defaultStatementTimeout" value="25"/>
+    </settings>
+
+    <typeAliases>
+        <package name="com.laundry.entity"/>
+    </typeAliases>
+</configuration>

@@ -1,0 +1,255 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="洗衣店订单管理系统 - 服务项目">
+    <title>服务项目 - 洗衣店管理</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/main.css?v=2">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <div class="sidebar-logo-icon">🧺</div>
+                    <span class="sidebar-logo-text">洗衣店</span>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-title">主菜单</div>
+                    <a href="dashboard.html" class="nav-item"><span class="nav-item-icon">📊</span><span class="nav-item-text">控制台</span></a>
+                    <a href="orders.html" class="nav-item"><span class="nav-item-icon">📋</span><span class="nav-item-text">订单管理</span></a>
+                    <a href="customers.html" class="nav-item"><span class="nav-item-icon">👥</span><span class="nav-item-text">客户管理</span></a>
+                    <a href="services.html" class="nav-item active"><span class="nav-item-icon">🛠️</span><span class="nav-item-text">服务项目</span></a>
+                </div>
+                <div class="nav-section" id="adminSection">
+                    <div class="nav-section-title">系统管理</div>
+                    <a href="users.html" class="nav-item"><span class="nav-item-icon">👤</span><span class="nav-item-text">用户管理</span></a>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-section-title">账户</div>
+                    <a href="profile.html" class="nav-item"><span class="nav-item-icon">⚙️</span><span class="nav-item-text">个人中心</span></a>
+                    <a href="javascript:void(0)" class="nav-item" onclick="auth.logout()"><span class="nav-item-icon">🚪</span><span class="nav-item-text">退出登录</span></a>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left"><h1 class="header-title">服务项目</h1></div>
+                <div class="header-right">
+                    <div class="header-user" id="headerUser">
+                        <div class="user-avatar" id="userAvatar">AD</div>
+                        <div class="user-info">
+                            <span class="user-name" id="userName">管理员</span>
+                            <span class="user-role" id="userRole">管理员</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="page-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">服务列表</h3>
+                        <button class="btn btn-primary" onclick="showAddModal()">+ 添加服务</button>
+                    </div>
+                    <div class="card-body">
+                        <div class="toolbar">
+                            <div class="toolbar-left">
+                                <div class="search-box">
+                                    <span class="search-box-icon">🔍</span>
+                                    <input type="text" id="searchInput" placeholder="搜索服务...">
+                                </div>
+                                <select class="form-control filter-select" id="categoryFilter">
+                                    <option value="">全部分类</option>
+                                    <option value="wash">水洗</option>
+                                    <option value="dry_clean">干洗</option>
+                                    <option value="iron">熨烫</option>
+                                    <option value="repair">修补</option>
+                                </select>
+                                <select class="form-control filter-select" id="statusFilter">
+                                    <option value="">全部状态</option>
+                                    <option value="1">启用</option>
+                                    <option value="0">禁用</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="serviceTable"><div class="loading"><div class="spinner"></div></div></div>
+                        <div id="pagination"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/utils.js"></script>
+    <script src="../js/components.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+        if (!auth.requireAuth()) throw new Error('未登录');
+
+        let currentPage = 1;
+        const pageSize = 10;
+        let filters = { keyword: '', category: '', status: '' };
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const user = auth.getUser();
+            if (user) {
+                document.getElementById('userName').textContent = user.realName || user.username;
+                document.getElementById('userRole').textContent = user.role === 1 ? '管理员' : '员工';
+                document.getElementById('userAvatar').textContent = utils.getInitials(user.realName || user.username);
+            }
+            if (!auth.isAdmin()) document.getElementById('adminSection').style.display = 'none';
+
+            document.getElementById('searchInput').addEventListener('input', utils.debounce((e) => {
+                filters.keyword = e.target.value; currentPage = 1; loadServices();
+            }, 300));
+            document.getElementById('categoryFilter').addEventListener('change', (e) => {
+                filters.category = e.target.value; currentPage = 1; loadServices();
+            });
+            document.getElementById('statusFilter').addEventListener('change', (e) => {
+                filters.status = e.target.value; currentPage = 1; loadServices();
+            });
+
+            await loadServices();
+        });
+
+        async function loadServices() {
+            try {
+                const response = await serviceApi.getList({ ...filters, page: currentPage, pageSize });
+                if (response.code === 200) {
+                    renderTable(response.data.list);
+                    Pagination.create({
+                        container: document.getElementById('pagination'),
+                        page: currentPage, pageSize, total: response.data.total,
+                        onChange: (page) => { currentPage = page; loadServices(); }
+                    });
+                }
+            } catch (error) { Toast.error('错误', error.message); }
+        }
+
+        function renderTable(data) {
+            Table.render({
+                container: document.getElementById('serviceTable'),
+                columns: [
+                    { title: '服务名称', key: 'name' },
+                    { title: '分类', key: 'category', render: (val) => utils.getCategoryName(val) },
+                    { title: '价格', key: 'price', render: (val) => utils.formatCurrency(val) },
+                    { title: '单位', key: 'unit', render: (val) => {
+                        const units = { piece: '件', kg: '公斤', set: '套' };
+                        return units[val] || val;
+                    }},
+                    { title: '状态', key: 'status', render: (val) => 
+                        `<span class="badge ${val === 1 ? 'badge-success' : 'badge-secondary'}">${val === 1 ? '启用' : '禁用'}</span>` },
+                    { title: '操作', key: 'id', width: '200px', render: (id, row) => `
+                        <div class="table-actions">
+                            <button class="btn btn-sm btn-secondary" onclick="showEditModal(${id})">编辑</button>
+                            <button class="btn btn-sm btn-${row.status === 1 ? 'warning' : 'success'}" onclick="toggleStatus(${id}, ${row.status})">${row.status === 1 ? '禁用' : '启用'}</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteService(${id})">删除</button>
+                        </div>
+                    ` }
+                ],
+                data, emptyText: '暂无服务数据'
+            });
+        }
+
+        function showAddModal() {
+            const modal = Modal.create({ title: '添加服务', content: getFormHtml(), size: 'lg' });
+            setupFormHandlers(modal, null);
+        }
+
+        async function showEditModal(id) {
+            try {
+                const response = await serviceApi.getById(id);
+                if (response.code === 200) {
+                    const modal = Modal.create({ title: '编辑服务', content: getFormHtml(response.data), size: 'lg' });
+                    setupFormHandlers(modal, response.data);
+                }
+            } catch (error) { Toast.error('错误', error.message); }
+        }
+
+        function getFormHtml(data = {}) {
+            return `
+                <form id="serviceForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label required">服务名称</label>
+                            <input type="text" class="form-control" name="name" value="${data.name || ''}" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label required">分类</label>
+                            <select class="form-control" name="category" required>
+                                <option value="">请选择分类</option>
+                                <option value="wash" ${data.category === 'wash' ? 'selected' : ''}>水洗</option>
+                                <option value="dry_clean" ${data.category === 'dry_clean' ? 'selected' : ''}>干洗</option>
+                                <option value="iron" ${data.category === 'iron' ? 'selected' : ''}>熨烫</option>
+                                <option value="repair" ${data.category === 'repair' ? 'selected' : ''}>修补</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label required">价格</label>
+                            <input type="number" step="0.01" class="form-control" name="price" value="${data.price || ''}" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">单位</label>
+                            <select class="form-control" name="unit">
+                                <option value="piece" ${data.unit === 'piece' ? 'selected' : ''}>件</option>
+                                <option value="kg" ${data.unit === 'kg' ? 'selected' : ''}>公斤</option>
+                                <option value="set" ${data.unit === 'set' ? 'selected' : ''}>套</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">描述</label>
+                        <textarea class="form-control" name="description">${data.description || ''}</textarea>
+                    </div>
+                    <div class="modal-footer" style="margin: -24px; margin-top: 24px; padding: 16px 24px;">
+                        <button type="button" class="btn btn-secondary" onclick="Modal.close(this.closest('.modal-overlay'))">取消</button>
+                        <button type="submit" class="btn btn-primary">保存</button>
+                    </div>
+                </form>
+            `;
+        }
+
+        function setupFormHandlers(modal, existing) {
+            modal.body.querySelector('#serviceForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const data = Object.fromEntries(formData);
+                data.price = parseFloat(data.price);
+
+                try {
+                    if (existing) { await serviceApi.update(existing.id, data); Toast.success('成功', '服务已更新'); }
+                    else { await serviceApi.create(data); Toast.success('成功', '服务已添加'); }
+                    modal.close(); loadServices();
+                } catch (error) { Toast.error('错误', error.message); }
+            });
+        }
+
+        async function toggleStatus(id, currentStatus) {
+            try {
+                await serviceApi.updateStatus(id, currentStatus === 1 ? 0 : 1);
+                Toast.success('成功', '状态已更新');
+                loadServices();
+            } catch (error) { Toast.error('错误', error.message); }
+        }
+
+        async function deleteService(id) {
+            const confirmed = await Modal.confirm({ title: '删除服务', message: '确定要删除该服务吗？此操作不可撤销。', danger: true });
+            if (confirmed) {
+                try { await serviceApi.delete(id); Toast.success('成功', '服务已删除'); loadServices(); }
+                catch (error) { Toast.error('错误', error.message); }
+            }
+        }
+    </script>
+</body>
+</html>

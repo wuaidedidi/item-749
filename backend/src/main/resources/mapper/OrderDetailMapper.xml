@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.laundry.mapper.OrderDetailMapper">
+
+    <resultMap id="OrderDetailResultMap" type="com.laundry.entity.OrderDetail">
+        <id property="id" column="id"/>
+        <result property="orderId" column="order_id"/>
+        <result property="serviceId" column="service_id"/>
+        <result property="serviceName" column="service_name"/>
+        <result property="quantity" column="quantity"/>
+        <result property="unitPrice" column="unit_price"/>
+        <result property="subtotal" column="subtotal"/>
+        <result property="remark" column="remark"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <resultMap id="OrderDetailWithServiceResultMap" type="com.laundry.entity.OrderDetail" extends="OrderDetailResultMap">
+        <association property="serviceItem" javaType="com.laundry.entity.ServiceItem">
+            <id property="id" column="s_id"/>
+            <result property="name" column="s_name"/>
+            <result property="category" column="s_category"/>
+            <result property="price" column="s_price"/>
+            <result property="unit" column="s_unit"/>
+        </association>
+    </resultMap>
+
+    <select id="findById" resultMap="OrderDetailWithServiceResultMap">
+        SELECT d.*, 
+               s.id as s_id, s.name as s_name, s.category as s_category, 
+               s.price as s_price, s.unit as s_unit
+        FROM order_detail d
+        LEFT JOIN service_item s ON d.service_id = s.id
+        WHERE d.id = #{id}
+    </select>
+
+    <select id="findByOrderId" resultMap="OrderDetailWithServiceResultMap">
+        SELECT d.*, 
+               s.id as s_id, s.name as s_name, s.category as s_category, 
+               s.price as s_price, s.unit as s_unit
+        FROM order_detail d
+        LEFT JOIN service_item s ON d.service_id = s.id
+        WHERE d.order_id = #{orderId}
+        ORDER BY d.id
+    </select>
+
+    <insert id="insert" parameterType="com.laundry.entity.OrderDetail" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO order_detail (order_id, service_id, service_name, quantity, unit_price, subtotal, remark)
+        VALUES (#{orderId}, #{serviceId}, #{serviceName}, #{quantity}, #{unitPrice}, #{subtotal}, #{remark})
+    </insert>
+
+    <insert id="batchInsert" parameterType="java.util.List">
+        INSERT INTO order_detail (order_id, service_id, service_name, quantity, unit_price, subtotal, remark)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.orderId}, #{item.serviceId}, #{item.serviceName}, #{item.quantity}, 
+             #{item.unitPrice}, #{item.subtotal}, #{item.remark})
+        </foreach>
+    </insert>
+
+    <update id="update" parameterType="com.laundry.entity.OrderDetail">
+        UPDATE order_detail
+        <set>
+            <if test="serviceId != null">service_id = #{serviceId},</if>
+            <if test="serviceName != null">service_name = #{serviceName},</if>
+            <if test="quantity != null">quantity = #{quantity},</if>
+            <if test="unitPrice != null">unit_price = #{unitPrice},</if>
+            <if test="subtotal != null">subtotal = #{subtotal},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM order_detail WHERE id = #{id}
+    </delete>
+
+    <delete id="deleteByOrderId">
+        DELETE FROM order_detail WHERE order_id = #{orderId}
+    </delete>
+
+    <select id="countByServiceId" resultType="long">
+        SELECT COUNT(*) FROM order_detail WHERE service_id = #{serviceId}
+    </select>
+
+</mapper>

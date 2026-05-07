@@ -1,0 +1,126 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="洗衣店订单管理系统 - 专业的洗衣店订单管理解决方案">
+    <title>洗衣店订单管理系统</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/main.css?v=2">
+    <style>
+        .landing-page {
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-darker) 100%);
+        }
+        .landing-hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+        .landing-content {
+            text-align: center;
+            max-width: 600px;
+        }
+        .landing-logo {
+            font-size: 72px;
+            margin-bottom: 24px;
+        }
+        .landing-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+        }
+        .landing-subtitle {
+            font-size: 1.125rem;
+            color: var(--text-secondary);
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+        .landing-buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .landing-features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 24px;
+            margin-top: 60px;
+        }
+        .landing-feature {
+            background: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+        }
+        .landing-feature-icon {
+            font-size: 36px;
+            margin-bottom: 12px;
+        }
+        .landing-feature-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+        .landing-feature-desc {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+    <div class="landing-page">
+        <div class="landing-hero">
+            <div class="landing-content">
+                <div class="landing-logo">🧺</div>
+                <h1 class="landing-title">洗衣店订单管理系统</h1>
+                <p class="landing-subtitle">
+                    专业的洗衣店管理解决方案，帮助您高效管理订单、客户和服务项目，
+                    提升运营效率，轻松管理您的洗衣业务。
+                </p>
+                <div class="landing-buttons">
+                    <a href="pages/login.html" class="btn btn-primary btn-lg">登录系统</a>
+                    <a href="pages/register.html" class="btn btn-secondary btn-lg">注册账户</a>
+                </div>
+
+                <div class="landing-features">
+                    <div class="landing-feature">
+                        <div class="landing-feature-icon">📋</div>
+                        <div class="landing-feature-title">订单管理</div>
+                        <div class="landing-feature-desc">快速创建和跟踪订单，完整的状态流转</div>
+                    </div>
+                    <div class="landing-feature">
+                        <div class="landing-feature-icon">👥</div>
+                        <div class="landing-feature-title">客户管理</div>
+                        <div class="landing-feature-desc">管理客户信息，查看历史订单记录</div>
+                    </div>
+                    <div class="landing-feature">
+                        <div class="landing-feature-icon">🛠️</div>
+                        <div class="landing-feature-title">服务配置</div>
+                        <div class="landing-feature-desc">灵活配置服务项目和定价方案</div>
+                    </div>
+                    <div class="landing-feature">
+                        <div class="landing-feature-icon">📊</div>
+                        <div class="landing-feature-title">数据统计</div>
+                        <div class="landing-feature-desc">实时统计订单和收入数据</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script>
+        if (auth.isLoggedIn()) {
+            window.location.href = 'pages/dashboard.html';
+        }
+    </script>
+</body>
+</html>

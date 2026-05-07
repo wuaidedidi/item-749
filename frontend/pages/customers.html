@@ -1,0 +1,242 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="洗衣店订单管理系统 - 客户管理">
+    <title>客户管理 - 洗衣店管理</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/main.css?v=2">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <div class="sidebar-logo-icon">🧺</div>
+                    <span class="sidebar-logo-text">洗衣店</span>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-title">主菜单</div>
+                    <a href="dashboard.html" class="nav-item"><span class="nav-item-icon">📊</span><span class="nav-item-text">控制台</span></a>
+                    <a href="orders.html" class="nav-item"><span class="nav-item-icon">📋</span><span class="nav-item-text">订单管理</span></a>
+                    <a href="customers.html" class="nav-item active"><span class="nav-item-icon">👥</span><span class="nav-item-text">客户管理</span></a>
+                    <a href="services.html" class="nav-item"><span class="nav-item-icon">🛠️</span><span class="nav-item-text">服务项目</span></a>
+                </div>
+                <div class="nav-section" id="adminSection">
+                    <div class="nav-section-title">系统管理</div>
+                    <a href="users.html" class="nav-item"><span class="nav-item-icon">👤</span><span class="nav-item-text">用户管理</span></a>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-section-title">账户</div>
+                    <a href="profile.html" class="nav-item"><span class="nav-item-icon">⚙️</span><span class="nav-item-text">个人中心</span></a>
+                    <a href="javascript:void(0)" class="nav-item" onclick="auth.logout()"><span class="nav-item-icon">🚪</span><span class="nav-item-text">退出登录</span></a>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left"><h1 class="header-title">客户管理</h1></div>
+                <div class="header-right">
+                    <div class="header-user" id="headerUser">
+                        <div class="user-avatar" id="userAvatar">AD</div>
+                        <div class="user-info">
+                            <span class="user-name" id="userName">管理员</span>
+                            <span class="user-role" id="userRole">管理员</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="page-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">客户列表</h3>
+                        <button class="btn btn-primary" onclick="showAddModal()">+ 添加客户</button>
+                    </div>
+                    <div class="card-body">
+                        <div class="toolbar">
+                            <div class="toolbar-left">
+                                <div class="search-box">
+                                    <span class="search-box-icon">🔍</span>
+                                    <input type="text" id="searchInput" placeholder="搜索客户...">
+                                </div>
+                            </div>
+                        </div>
+                        <div id="customerTable">
+                            <div class="loading"><div class="spinner"></div></div>
+                        </div>
+                        <div id="pagination"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/utils.js"></script>
+    <script src="../js/components.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+        if (!auth.requireAuth()) throw new Error('未登录');
+
+        let currentPage = 1;
+        const pageSize = 10;
+        let searchKeyword = '';
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const user = auth.getUser();
+            if (user) {
+                document.getElementById('userName').textContent = user.realName || user.username;
+                document.getElementById('userRole').textContent = user.role === 1 ? '管理员' : '员工';
+                document.getElementById('userAvatar').textContent = utils.getInitials(user.realName || user.username);
+            }
+            if (!auth.isAdmin()) document.getElementById('adminSection').style.display = 'none';
+
+            document.getElementById('searchInput').addEventListener('input', utils.debounce((e) => {
+                searchKeyword = e.target.value;
+                currentPage = 1;
+                loadCustomers();
+            }, 300));
+
+            await loadCustomers();
+        });
+
+        async function loadCustomers() {
+            try {
+                const response = await customerApi.getList({ keyword: searchKeyword, page: currentPage, pageSize });
+                if (response.code === 200) {
+                    renderTable(response.data.list);
+                    Pagination.create({
+                        container: document.getElementById('pagination'),
+                        page: currentPage,
+                        pageSize,
+                        total: response.data.total,
+                        onChange: (page) => { currentPage = page; loadCustomers(); }
+                    });
+                }
+            } catch (error) {
+                Toast.error('错误', error.message);
+            }
+        }
+
+        function renderTable(data) {
+            Table.render({
+                container: document.getElementById('customerTable'),
+                columns: [
+                    { title: '姓名', key: 'name' },
+                    { title: '电话', key: 'phone' },
+                    { title: '地址', key: 'address' },
+                    { title: '备注', key: 'remark' },
+                    { title: '创建时间', key: 'createdAt', render: (val) => utils.formatDate(val, 'YYYY-MM-DD') },
+                    { title: '操作', key: 'id', width: '150px', render: (id, row) => `
+                        <div class="table-actions">
+                            <button class="btn btn-sm btn-secondary" onclick="showEditModal(${id})">编辑</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteCustomer(${id})">删除</button>
+                        </div>
+                    ` }
+                ],
+                data,
+                emptyText: '暂无客户数据'
+            });
+        }
+
+        function showAddModal() {
+            const modal = Modal.create({
+                title: '添加客户',
+                content: getFormHtml(),
+                size: 'lg'
+            });
+            setupFormHandlers(modal, null);
+        }
+
+        async function showEditModal(id) {
+            try {
+                const response = await customerApi.getById(id);
+                if (response.code === 200) {
+                    const modal = Modal.create({ title: '编辑客户', content: getFormHtml(response.data), size: 'lg' });
+                    setupFormHandlers(modal, response.data);
+                }
+            } catch (error) {
+                Toast.error('错误', error.message);
+            }
+        }
+
+        function getFormHtml(data = {}) {
+            return `
+                <form id="customerForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label required">姓名</label>
+                            <input type="text" class="form-control" name="name" value="${data.name || ''}" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">电话</label>
+                            <input type="tel" class="form-control" name="phone" value="${data.phone || ''}">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">地址</label>
+                        <input type="text" class="form-control" name="address" value="${data.address || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">备注</label>
+                        <textarea class="form-control" name="remark">${data.remark || ''}</textarea>
+                    </div>
+                    <div class="modal-footer" style="margin: -24px; margin-top: 24px; padding: 16px 24px;">
+                        <button type="button" class="btn btn-secondary" onclick="Modal.close(this.closest('.modal-overlay'))">取消</button>
+                        <button type="submit" class="btn btn-primary">保存</button>
+                    </div>
+                </form>
+            `;
+        }
+
+        function setupFormHandlers(modal, existing) {
+            modal.body.querySelector('#customerForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const data = Object.fromEntries(formData);
+
+                try {
+                    if (existing) {
+                        if (data.phone && !utils.isValidPhone(data.phone)) throw new Error('手机号格式不正确');
+                        await customerApi.update(existing.id, data);
+                        Toast.success('成功', '客户信息已更新');
+                    } else {
+                        if (!data.name) throw new Error('请输入客户姓名');
+                        if (data.phone && !utils.isValidPhone(data.phone)) throw new Error('手机号格式不正确');
+                        await customerApi.create(data);
+                        Toast.success('成功', '客户已添加');
+                    }
+                    modal.close();
+                    loadCustomers();
+                } catch (error) {
+                    Toast.error('错误', error.message);
+                }
+            });
+        }
+
+        async function deleteCustomer(id) {
+            const confirmed = await Modal.confirm({
+                title: '删除客户',
+                message: '确定要删除该客户吗？此操作不可撤销。',
+                danger: true
+            });
+            if (confirmed) {
+                try {
+                    await customerApi.delete(id);
+                    Toast.success('成功', '客户已删除');
+                    loadCustomers();
+                } catch (error) {
+                    Toast.error('错误', error.message);
+                }
+            }
+        }
+    </script>
+</body>
+</html>

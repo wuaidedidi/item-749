@@ -1,0 +1,279 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="洗衣店订单管理系统 - 控制台">
+    <title>控制台 - 洗衣店管理</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/main.css?v=2">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <div class="sidebar-logo-icon">🧺</div>
+                    <span class="sidebar-logo-text">洗衣店</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-title">主菜单</div>
+                    <a href="dashboard.html" class="nav-item active">
+                        <span class="nav-item-icon">📊</span>
+                        <span class="nav-item-text">控制台</span>
+                    </a>
+                    <a href="orders.html" class="nav-item">
+                        <span class="nav-item-icon">📋</span>
+                        <span class="nav-item-text">订单管理</span>
+                    </a>
+                    <a href="customers.html" class="nav-item">
+                        <span class="nav-item-icon">👥</span>
+                        <span class="nav-item-text">客户管理</span>
+                    </a>
+                    <a href="services.html" class="nav-item">
+                        <span class="nav-item-icon">🛠️</span>
+                        <span class="nav-item-text">服务项目</span>
+                    </a>
+                </div>
+
+                <div class="nav-section" id="adminSection">
+                    <div class="nav-section-title">系统管理</div>
+                    <a href="users.html" class="nav-item">
+                        <span class="nav-item-icon">👤</span>
+                        <span class="nav-item-text">用户管理</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">账户</div>
+                    <a href="profile.html" class="nav-item">
+                        <span class="nav-item-icon">⚙️</span>
+                        <span class="nav-item-text">个人中心</span>
+                    </a>
+                    <a href="javascript:void(0)" class="nav-item" onclick="auth.logout()">
+                        <span class="nav-item-icon">🚪</span>
+                        <span class="nav-item-text">退出登录</span>
+                    </a>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <h1 class="header-title">控制台</h1>
+                </div>
+                <div class="header-right">
+                    <div class="header-user" id="headerUser">
+                        <div class="user-avatar" id="userAvatar">AD</div>
+                        <div class="user-info">
+                            <span class="user-name" id="userName">管理员</span>
+                            <span class="user-role" id="userRole">管理员</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="page-content">
+                <div class="stat-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon blue">📦</div>
+                        <div class="stat-content">
+                            <div class="stat-label">总订单数</div>
+                            <div class="stat-value" id="statTotalOrders">0</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon orange">⏳</div>
+                        <div class="stat-content">
+                            <div class="stat-label">待处理</div>
+                            <div class="stat-value" id="statPendingOrders">0</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon cyan">🔄</div>
+                        <div class="stat-content">
+                            <div class="stat-label">处理中</div>
+                            <div class="stat-value" id="statProcessingOrders">0</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green">✅</div>
+                        <div class="stat-content">
+                            <div class="stat-label">已完成</div>
+                            <div class="stat-value" id="statCompletedOrders">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon green">💰</div>
+                        <div class="stat-content">
+                            <div class="stat-label">今日收入</div>
+                            <div class="stat-value" id="statTodayRevenue">¥0.00</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon blue">📈</div>
+                        <div class="stat-content">
+                            <div class="stat-label">本月收入</div>
+                            <div class="stat-value" id="statMonthRevenue">¥0.00</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon cyan">👥</div>
+                        <div class="stat-content">
+                            <div class="stat-label">客户总数</div>
+                            <div class="stat-value" id="statTotalCustomers">0</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon orange">🛠️</div>
+                        <div class="stat-content">
+                            <div class="stat-label">服务项目</div>
+                            <div class="stat-value" id="statTotalServices">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">最近订单</h3>
+                        <a href="orders.html" class="btn btn-sm btn-secondary">查看全部</a>
+                    </div>
+                    <div class="card-body" id="recentOrdersTable">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/utils.js"></script>
+    <script src="../js/components.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+        if (!auth.requireAuth()) {
+            throw new Error('未登录');
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const user = auth.getUser();
+            if (user) {
+                document.getElementById('userName').textContent = user.realName || user.username;
+                document.getElementById('userRole').textContent = user.role === 1 ? '管理员' : '员工';
+                document.getElementById('userAvatar').textContent = utils.getInitials(user.realName || user.username);
+            }
+
+            if (!auth.isAdmin()) {
+                document.getElementById('adminSection').style.display = 'none';
+            }
+
+            await loadDashboardData();
+        });
+
+        async function loadDashboardData() {
+            try {
+                const statsResponse = await dashboardApi.getStats();
+                if (statsResponse.code === 200) {
+                    const stats = statsResponse.data;
+                    document.getElementById('statTotalOrders').textContent = stats.totalOrders;
+                    document.getElementById('statPendingOrders').textContent = stats.pendingOrders;
+                    document.getElementById('statProcessingOrders').textContent = stats.processingOrders;
+                    document.getElementById('statCompletedOrders').textContent = stats.completedOrders;
+                    document.getElementById('statTodayRevenue').textContent = utils.formatCurrency(stats.todayRevenue);
+                    document.getElementById('statMonthRevenue').textContent = utils.formatCurrency(stats.monthRevenue);
+                    document.getElementById('statTotalCustomers').textContent = stats.totalCustomers;
+                    document.getElementById('statTotalServices').textContent = stats.totalServices;
+                }
+
+                const ordersResponse = await dashboardApi.getRecentOrders(5);
+                if (ordersResponse.code === 200) {
+                    renderRecentOrders(ordersResponse.data);
+                }
+            } catch (error) {
+                console.error('加载数据失败:', error);
+                Toast.error('错误', '加载控制台数据失败');
+            }
+        }
+
+        function renderRecentOrders(orders) {
+            const container = document.getElementById('recentOrdersTable');
+
+            if (!orders || orders.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📋</div>
+                        <div class="empty-state-title">暂无订单</div>
+                        <div class="empty-state-text">创建第一个订单开始使用系统</div>
+                        <a href="orders.html" class="btn btn-primary mt-2">创建订单</a>
+                    </div>
+                `;
+                return;
+            }
+
+            Table.render({
+                container,
+                columns: [
+                    { title: '订单号', key: 'orderNo', width: '140px' },
+                    { title: '客户', key: 'customer', render: (_, row) => row.customer ? row.customer.name : '-' },
+                    { title: '金额', key: 'totalAmount', render: (val) => utils.formatCurrency(val) },
+                    { title: '状态', key: 'status', render: (val) => 
+                        `<span class="badge ${utils.getOrderStatusClass(val)}">${utils.getOrderStatusText(val)}</span>` 
+                    },
+                    { title: '日期', key: 'receiveTime', render: (val) => utils.formatDate(val, 'YYYY-MM-DD') },
+                    { title: '操作', key: 'id', width: '100px', render: (id) => 
+                        `<button class="btn btn-sm btn-secondary" onclick="viewOrder(${id})">查看</button>` 
+                    }
+                ],
+                data: orders
+            });
+        }
+
+        async function viewOrder(id) {
+            try {
+                const response = await orderApi.getById(id);
+                if (response.code === 200) {
+                    const order = response.data;
+                    let detailsHtml = '';
+                    if (order.orderDetails && order.orderDetails.length > 0) {
+                        detailsHtml = `<table class="table" style="margin-top: 16px;">
+                            <thead><tr><th>服务</th><th>数量</th><th>单价</th><th>小计</th></tr></thead>
+                            <tbody>${order.orderDetails.map(d => `
+                                <tr><td>${d.serviceName}</td><td>${d.quantity}</td><td>${utils.formatCurrency(d.unitPrice)}</td><td>${utils.formatCurrency(d.subtotal)}</td></tr>
+                            `).join('')}</tbody>
+                        </table>`;
+                    }
+
+                    Modal.create({
+                        title: `订单: ${order.orderNo}`,
+                        content: `
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                                <div><strong>客户:</strong> ${order.customer ? order.customer.name : '-'}</div>
+                                <div><strong>电话:</strong> ${order.customer ? order.customer.phone : '-'}</div>
+                                <div><strong>状态:</strong> <span class="badge ${utils.getOrderStatusClass(order.status)}">${utils.getOrderStatusText(order.status)}</span></div>
+                                <div><strong>金额:</strong> ${utils.formatCurrency(order.totalAmount)}</div>
+                                <div><strong>收件时间:</strong> ${utils.formatDate(order.receiveTime)}</div>
+                                <div><strong>预计完成:</strong> ${utils.formatDate(order.expectTime)}</div>
+                            </div>
+                            <div style="margin-top: 16px;"><strong>备注:</strong> ${order.remark || '-'}</div>
+                            <h4 style="margin-top: 24px;">订单明细</h4>
+                            ${detailsHtml}
+                        `,
+                        size: 'lg'
+                    });
+                }
+            } catch (error) { Toast.error('错误', error.message); }
+        }
+    </script>
+</body>
+</html>

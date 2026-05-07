@@ -1,0 +1,97 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="洗衣店订单管理系统 - 登录">
+    <title>登录 - 洗衣店管理</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/main.css?v=2">
+</head>
+<body>
+    <div class="login-page">
+        <div class="login-container">
+            <div class="login-card">
+                <div class="login-header">
+                    <div class="login-logo">🧺</div>
+                    <h1 class="login-title">洗衣店管理系统</h1>
+                    <p class="login-subtitle">请登录您的账户</p>
+                </div>
+
+                <form class="login-form" id="loginForm">
+                    <div class="form-group">
+                        <label class="form-label required" for="username">用户名</label>
+                        <input type="text" class="form-control" id="username" name="username" 
+                               placeholder="请输入用户名" autocomplete="username" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label required" for="password">密码</label>
+                        <input type="password" class="form-control" id="password" name="password" 
+                               placeholder="请输入密码" autocomplete="current-password" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-lg" id="loginBtn">
+                        <span id="loginText">登 录</span>
+                        <span id="loginLoading" class="hidden">登录中...</span>
+                    </button>
+                </form>
+
+                <div class="login-footer">
+                    <p>还没有账户？ <a href="register.html">立即注册</a></p>
+                </div>
+            </div>
+
+            <p style="text-align: center; margin-top: 20px; color: var(--text-muted); font-size: 0.875rem;">
+                测试账号: admin / 123456
+            </p>
+        </div>
+    </div>
+
+    <script src="../js/utils.js"></script>
+    <script src="../js/components.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+        if (auth.isLoggedIn()) {
+            window.location.href = 'dashboard.html';
+        }
+
+        const loginForm = document.getElementById('loginForm');
+        const loginBtn = document.getElementById('loginBtn');
+        const loginText = document.getElementById('loginText');
+        const loginLoading = document.getElementById('loginLoading');
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+
+            if (!username || !password) {
+                Toast.warning('验证提示', '请输入用户名和密码');
+                return;
+            }
+
+            loginBtn.disabled = true;
+            loginText.classList.add('hidden');
+            loginLoading.classList.remove('hidden');
+
+            try {
+                await auth.login(username, password);
+                Toast.success('成功', '登录成功！');
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 500);
+            } catch (error) {
+                Toast.error('登录失败', error.message);
+                loginBtn.disabled = false;
+                loginText.classList.remove('hidden');
+                loginLoading.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>

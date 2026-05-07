@@ -1,0 +1,307 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="洗衣店订单管理系统 - 订单管理">
+    <title>订单管理 - 洗衣店管理</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/main.css?v=2">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <div class="sidebar-logo-icon">🧺</div>
+                    <span class="sidebar-logo-text">洗衣店</span>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-title">主菜单</div>
+                    <a href="dashboard.html" class="nav-item"><span class="nav-item-icon">📊</span><span class="nav-item-text">控制台</span></a>
+                    <a href="orders.html" class="nav-item active"><span class="nav-item-icon">📋</span><span class="nav-item-text">订单管理</span></a>
+                    <a href="customers.html" class="nav-item"><span class="nav-item-icon">👥</span><span class="nav-item-text">客户管理</span></a>
+                    <a href="services.html" class="nav-item"><span class="nav-item-icon">🛠️</span><span class="nav-item-text">服务项目</span></a>
+                </div>
+                <div class="nav-section" id="adminSection">
+                    <div class="nav-section-title">系统管理</div>
+                    <a href="users.html" class="nav-item"><span class="nav-item-icon">👤</span><span class="nav-item-text">用户管理</span></a>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-section-title">账户</div>
+                    <a href="profile.html" class="nav-item"><span class="nav-item-icon">⚙️</span><span class="nav-item-text">个人中心</span></a>
+                    <a href="javascript:void(0)" class="nav-item" onclick="auth.logout()"><span class="nav-item-icon">🚪</span><span class="nav-item-text">退出登录</span></a>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left"><h1 class="header-title">订单管理</h1></div>
+                <div class="header-right">
+                    <div class="header-user" id="headerUser">
+                        <div class="user-avatar" id="userAvatar">AD</div>
+                        <div class="user-info">
+                            <span class="user-name" id="userName">管理员</span>
+                            <span class="user-role" id="userRole">管理员</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="page-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">订单列表</h3>
+                        <button class="btn btn-primary" onclick="showCreateOrderModal()">+ 新建订单</button>
+                    </div>
+                    <div class="card-body">
+                        <div class="toolbar">
+                            <div class="toolbar-left">
+                                <div class="search-box">
+                                    <span class="search-box-icon">🔍</span>
+                                    <input type="text" id="searchInput" placeholder="搜索订单...">
+                                </div>
+                                <select class="form-control filter-select" id="statusFilter">
+                                    <option value="">全部状态</option>
+                                    <option value="0">待处理</option>
+                                    <option value="1">处理中</option>
+                                    <option value="2">待取件</option>
+                                    <option value="3">已完成</option>
+                                    <option value="4">已取消</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="orderTable"><div class="loading"><div class="spinner"></div></div></div>
+                        <div id="pagination"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/utils.js"></script>
+    <script src="../js/components.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+        if (!auth.requireAuth()) throw new Error('未登录');
+
+        let currentPage = 1;
+        const pageSize = 10;
+        let filters = { keyword: '', status: '' };
+        let customers = [];
+        let services = [];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const user = auth.getUser();
+            if (user) {
+                document.getElementById('userName').textContent = user.realName || user.username;
+                document.getElementById('userRole').textContent = user.role === 1 ? '管理员' : '员工';
+                document.getElementById('userAvatar').textContent = utils.getInitials(user.realName || user.username);
+            }
+            if (!auth.isAdmin()) document.getElementById('adminSection').style.display = 'none';
+
+            document.getElementById('searchInput').addEventListener('input', utils.debounce((e) => {
+                filters.keyword = e.target.value; currentPage = 1; loadOrders();
+            }, 300));
+            document.getElementById('statusFilter').addEventListener('change', (e) => {
+                filters.status = e.target.value; currentPage = 1; loadOrders();
+            });
+
+            await Promise.all([loadOrders(), loadCustomers(), loadServices()]);
+        });
+
+        async function loadOrders() {
+            try {
+                const response = await orderApi.getList({ ...filters, page: currentPage, pageSize });
+                if (response.code === 200) {
+                    renderTable(response.data.list);
+                    Pagination.create({
+                        container: document.getElementById('pagination'),
+                        page: currentPage, pageSize, total: response.data.total,
+                        onChange: (page) => { currentPage = page; loadOrders(); }
+                    });
+                }
+            } catch (error) { Toast.error('错误', error.message); }
+        }
+
+        async function loadCustomers() {
+            try {
+                const response = await customerApi.getAll();
+                if (response.code === 200) customers = response.data;
+            } catch (error) { console.error('加载客户失败:', error); }
+        }
+
+        async function loadServices() {
+            try {
+                const response = await serviceApi.getActive();
+                if (response.code === 200) services = response.data;
+            } catch (error) { console.error('加载服务失败:', error); }
+        }
+
+        function renderTable(data) {
+            Table.render({
+                container: document.getElementById('orderTable'),
+                columns: [
+                    { title: '订单号', key: 'orderNo', width: '140px' },
+                    { title: '客户', key: 'customer', render: (_, row) => row.customer ? row.customer.name : '-' },
+                    { title: '电话', key: 'customer', render: (_, row) => row.customer ? row.customer.phone : '-' },
+                    { title: '金额', key: 'totalAmount', render: (val) => utils.formatCurrency(val) },
+                    { title: '状态', key: 'status', render: (val) => 
+                        `<span class="badge ${utils.getOrderStatusClass(val)}">${utils.getOrderStatusText(val)}</span>` },
+                    { title: '日期', key: 'receiveTime', render: (val) => utils.formatDate(val, 'YYYY-MM-DD') },
+                    { title: '操作', key: 'id', width: '200px', render: (id, row) => `
+                        <div class="table-actions">
+                            <button class="btn btn-sm btn-secondary" onclick="viewOrder(${id})">查看</button>
+                            ${row.status < 3 ? `<button class="btn btn-sm btn-success" onclick="updateStatus(${id}, ${row.status + 1})">下一步</button>` : ''}
+                            ${row.status === 0 ? `<button class="btn btn-sm btn-danger" onclick="cancelOrder(${id})">取消</button>` : ''}
+                        </div>
+                    ` }
+                ],
+                data, emptyText: '暂无订单数据'
+            });
+        }
+
+        async function viewOrder(id) {
+            try {
+                const response = await orderApi.getById(id);
+                if (response.code === 200) {
+                    const order = response.data;
+                    let detailsHtml = '';
+                    if (order.orderDetails && order.orderDetails.length > 0) {
+                        detailsHtml = `<table class="table" style="margin-top: 16px;">
+                            <thead><tr><th>服务</th><th>数量</th><th>单价</th><th>小计</th></tr></thead>
+                            <tbody>${order.orderDetails.map(d => `
+                                <tr><td>${d.serviceName}</td><td>${d.quantity}</td><td>${utils.formatCurrency(d.unitPrice)}</td><td>${utils.formatCurrency(d.subtotal)}</td></tr>
+                            `).join('')}</tbody>
+                        </table>`;
+                    }
+
+                    Modal.create({
+                        title: `订单: ${order.orderNo}`,
+                        content: `
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                                <div><strong>客户:</strong> ${order.customer ? order.customer.name : '-'}</div>
+                                <div><strong>电话:</strong> ${order.customer ? order.customer.phone : '-'}</div>
+                                <div><strong>状态:</strong> <span class="badge ${utils.getOrderStatusClass(order.status)}">${utils.getOrderStatusText(order.status)}</span></div>
+                                <div><strong>金额:</strong> ${utils.formatCurrency(order.totalAmount)}</div>
+                                <div><strong>收件时间:</strong> ${utils.formatDate(order.receiveTime)}</div>
+                                <div><strong>预计完成:</strong> ${utils.formatDate(order.expectTime)}</div>
+                            </div>
+                            <div style="margin-top: 16px;"><strong>备注:</strong> ${order.remark || '-'}</div>
+                            <h4 style="margin-top: 24px;">订单明细</h4>
+                            ${detailsHtml}
+                        `,
+                        size: 'lg'
+                    });
+                }
+            } catch (error) { Toast.error('错误', error.message); }
+        }
+
+        function showCreateOrderModal() {
+            if (customers.length === 0) { Toast.warning('提示', '请先添加客户'); return; }
+            if (services.length === 0) { Toast.warning('提示', '请先添加服务项目'); return; }
+
+            const modal = Modal.create({
+                title: '新建订单',
+                content: `
+                    <form id="orderForm">
+                        <div class="form-group">
+                            <label class="form-label required">选择客户</label>
+                            <select class="form-control" name="customerId" required>
+                                <option value="">请选择客户</option>
+                                ${customers.map(c => `<option value="${c.id}">${c.name} - ${c.phone}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label required">选择服务</label>
+                            <div id="orderItems">
+                                <div class="order-item" style="display: flex; gap: 12px; margin-bottom: 12px; align-items: center;">
+                                    <select class="form-control" name="serviceId" style="flex: 2;" required>
+                                        <option value="">请选择服务</option>
+                                        ${services.map(s => `<option value="${s.id}" data-price="${s.price}">${s.name} - ${utils.formatCurrency(s.price)}</option>`).join('')}
+                                    </select>
+                                    <input type="number" class="form-control" name="quantity" value="1" min="1" style="flex: 1;" required>
+                                    <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">×</button>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="addOrderItem()">+ 添加服务</button>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">备注</label>
+                            <textarea class="form-control" name="remark"></textarea>
+                        </div>
+                        <div class="modal-footer" style="margin: -24px; margin-top: 24px; padding: 16px 24px;">
+                            <button type="button" class="btn btn-secondary" onclick="Modal.close(this.closest('.modal-overlay'))">取消</button>
+                            <button type="submit" class="btn btn-primary">创建订单</button>
+                        </div>
+                    </form>
+                `,
+                size: 'lg'
+            });
+
+            modal.body.querySelector('#orderForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const customerId = parseInt(e.target.querySelector('[name="customerId"]').value);
+                const remark = e.target.querySelector('[name="remark"]').value;
+                const itemRows = e.target.querySelectorAll('.order-item');
+                const items = [];
+
+                itemRows.forEach(row => {
+                    const serviceId = parseInt(row.querySelector('[name="serviceId"]').value);
+                    const quantity = parseInt(row.querySelector('[name="quantity"]').value);
+                    if (serviceId && quantity > 0) {
+                        items.push({ serviceId, quantity });
+                    }
+                });
+
+                if (items.length === 0) { Toast.warning('提示', '请至少添加一项服务'); return; }
+
+                try {
+                    await orderApi.create({ customerId, items, remark });
+                    Toast.success('成功', '订单已创建');
+                    modal.close();
+                    loadOrders();
+                } catch (error) { Toast.error('错误', error.message); }
+            });
+        }
+
+        function addOrderItem() {
+            const container = document.getElementById('orderItems');
+            const div = document.createElement('div');
+            div.className = 'order-item';
+            div.style.cssText = 'display: flex; gap: 12px; margin-bottom: 12px; align-items: center;';
+            div.innerHTML = `
+                <select class="form-control" name="serviceId" style="flex: 2;" required>
+                    <option value="">请选择服务</option>
+                    ${services.map(s => `<option value="${s.id}" data-price="${s.price}">${s.name} - ${utils.formatCurrency(s.price)}</option>`).join('')}
+                </select>
+                <input type="number" class="form-control" name="quantity" value="1" min="1" style="flex: 1;" required>
+                <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">×</button>
+            `;
+            container.appendChild(div);
+        }
+
+        async function updateStatus(id, newStatus) {
+            try {
+                await orderApi.updateStatus(id, newStatus);
+                Toast.success('成功', '订单状态已更新');
+                loadOrders();
+            } catch (error) { Toast.error('错误', error.message); }
+        }
+
+        async function cancelOrder(id) {
+            const confirmed = await Modal.confirm({ title: '取消订单', message: '确定要取消该订单吗？', danger: true });
+            if (confirmed) {
+                try { await orderApi.updateStatus(id, 4); Toast.success('成功', '订单已取消'); loadOrders(); }
+                catch (error) { Toast.error('错误', error.message); }
+            }
+        }
+    </script>
+</body>
+</html>

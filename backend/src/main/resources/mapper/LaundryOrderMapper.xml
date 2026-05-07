@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.laundry.mapper.LaundryOrderMapper">
+
+    <resultMap id="OrderResultMap" type="com.laundry.entity.LaundryOrder">
+        <id property="id" column="id"/>
+        <result property="orderNo" column="order_no"/>
+        <result property="customerId" column="customer_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="totalAmount" column="total_amount"/>
+        <result property="status" column="status"/>
+        <result property="receiveTime" column="receive_time"/>
+        <result property="expectTime" column="expect_time"/>
+        <result property="completeTime" column="complete_time"/>
+        <result property="deliverTime" column="deliver_time"/>
+        <result property="remark" column="remark"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <resultMap id="OrderWithRelationsResultMap" type="com.laundry.entity.LaundryOrder" extends="OrderResultMap">
+        <association property="customer" javaType="com.laundry.entity.Customer">
+            <id property="id" column="c_id"/>
+            <result property="name" column="c_name"/>
+            <result property="phone" column="c_phone"/>
+            <result property="address" column="c_address"/>
+        </association>
+        <association property="user" javaType="com.laundry.entity.User">
+            <id property="id" column="u_id"/>
+            <result property="username" column="u_username"/>
+            <result property="realName" column="u_real_name"/>
+        </association>
+    </resultMap>
+
+    <resultMap id="OrderWithDetailsResultMap" type="com.laundry.entity.LaundryOrder" extends="OrderWithRelationsResultMap">
+        <collection property="orderDetails" ofType="com.laundry.entity.OrderDetail">
+            <id property="id" column="d_id"/>
+            <result property="orderId" column="d_order_id"/>
+            <result property="serviceId" column="d_service_id"/>
+            <result property="serviceName" column="d_service_name"/>
+            <result property="quantity" column="d_quantity"/>
+            <result property="unitPrice" column="d_unit_price"/>
+            <result property="subtotal" column="d_subtotal"/>
+            <result property="remark" column="d_remark"/>
+        </collection>
+    </resultMap>
+
+    <select id="findById" resultMap="OrderWithRelationsResultMap">
+        SELECT o.*, 
+               c.id as c_id, c.name as c_name, c.phone as c_phone, c.address as c_address,
+               u.id as u_id, u.username as u_username, u.real_name as u_real_name
+        FROM laundry_order o
+        LEFT JOIN customer c ON o.customer_id = c.id
+        LEFT JOIN sys_user u ON o.user_id = u.id
+        WHERE o.id = #{id}
+    </select>
+
+    <select id="findByIdWithDetails" resultMap="OrderWithDetailsResultMap">
+        SELECT o.*, 
+               c.id as c_id, c.name as c_name, c.phone as c_phone, c.address as c_address,
+               u.id as u_id, u.username as u_username, u.real_name as u_real_name,
+               d.id as d_id, d.order_id as d_order_id, d.service_id as d_service_id,
+               d.service_name as d_service_name, d.quantity as d_quantity,
+               d.unit_price as d_unit_price, d.subtotal as d_subtotal, d.remark as d_remark
+        FROM laundry_order o
+        LEFT JOIN customer c ON o.customer_id = c.id
+        LEFT JOIN sys_user u ON o.user_id = u.id
+        LEFT JOIN order_detail d ON o.id = d.order_id
+        WHERE o.id = #{id}
+    </select>
+
+    <select id="findByOrderNo" resultMap="OrderWithRelationsResultMap">
+        SELECT o.*, 
+               c.id as c_id, c.name as c_name, c.phone as c_phone, c.address as c_address,
+               u.id as u_id, u.username as u_username, u.real_name as u_real_name
+        FROM laundry_order o
+        LEFT JOIN customer c ON o.customer_id = c.id
+        LEFT JOIN sys_user u ON o.user_id = u.id
+        WHERE o.order_no = #{orderNo}
+    </select>
+
+    <select id="findAll" resultMap="OrderWithRelationsResultMap">
+        SELECT o.*, 
+               c.id as c_id, c.name as c_name, c.phone as c_phone, c.address as c_address,
+               u.id as u_id, u.username as u_username, u.real_name as u_real_name
+        FROM laundry_order o
+        LEFT JOIN customer c ON o.customer_id = c.id
+        LEFT JOIN sys_user u ON o.user_id = u.id
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (o.order_no LIKE CONCAT('%', #{keyword}, '%') 
+                     OR c.name LIKE CONCAT('%', #{keyword}, '%')
+                     OR c.phone LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            <if test="status != null">
+                AND o.status = #{status}
+            </if>
+            <if test="customerId != null">
+                AND o.customer_id = #{customerId}
+            </if>
+            <if test="startDate != null and startDate != ''">
+                AND o.receive_time >= #{startDate}
+            </if>
+            <if test="endDate != null and endDate != ''">
+                AND o.receive_time &lt;= #{endDate}
+            </if>
+        </where>
+        ORDER BY o.created_at DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="findRecent" resultMap="OrderWithRelationsResultMap">
+        SELECT o.*, 
+               c.id as c_id, c.name as c_name, c.phone as c_phone, c.address as c_address,
+               u.id as u_id, u.username as u_username, u.real_name as u_real_name
+        FROM laundry_order o
+        LEFT JOIN customer c ON o.customer_id = c.id
+        LEFT JOIN sys_user u ON o.user_id = u.id
+        ORDER BY o.created_at DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="count" resultType="long">
+        SELECT COUNT(*) FROM laundry_order o
+        LEFT JOIN customer c ON o.customer_id = c.id
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (o.order_no LIKE CONCAT('%', #{keyword}, '%') 
+                     OR c.name LIKE CONCAT('%', #{keyword}, '%')
+                     OR c.phone LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            <if test="status != null">
+                AND o.status = #{status}
+            </if>
+            <if test="customerId != null">
+                AND o.customer_id = #{customerId}
+            </if>
+            <if test="startDate != null and startDate != ''">
+                AND o.receive_time >= #{startDate}
+            </if>
+            <if test="endDate != null and endDate != ''">
+                AND o.receive_time &lt;= #{endDate}
+            </if>
+        </where>
+    </select>
+
+    <select id="countByStatus" resultType="long">
+        SELECT COUNT(*) FROM laundry_order WHERE status = #{status}
+    </select>
+
+    <insert id="insert" parameterType="com.laundry.entity.LaundryOrder" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO laundry_order (order_no, customer_id, user_id, total_amount, status, 
+                                   receive_time, expect_time, remark)
+        VALUES (#{orderNo}, #{customerId}, #{userId}, #{totalAmount}, #{status}, 
+                #{receiveTime}, #{expectTime}, #{remark})
+    </insert>
+
+    <update id="update" parameterType="com.laundry.entity.LaundryOrder">
+        UPDATE laundry_order
+        <set>
+            <if test="customerId != null">customer_id = #{customerId},</if>
+            <if test="totalAmount != null">total_amount = #{totalAmount},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="expectTime != null">expect_time = #{expectTime},</if>
+            <if test="completeTime != null">complete_time = #{completeTime},</if>
+            <if test="deliverTime != null">deliver_time = #{deliverTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateStatus">
+        UPDATE laundry_order 
+        SET status = #{status}
+        <if test="completeTime != null">, complete_time = #{completeTime}</if>
+        <if test="deliverTime != null">, deliver_time = #{deliverTime}</if>
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateTotalAmount">
+        UPDATE laundry_order SET total_amount = #{totalAmount} WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM laundry_order WHERE id = #{id}
+    </delete>
+
+    <select id="getRevenue" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(total_amount), 0) 
+        FROM laundry_order 
+        WHERE status = 3
+        <if test="startDate != null and startDate != ''">
+            AND receive_time >= #{startDate}
+        </if>
+        <if test="endDate != null and endDate != ''">
+            AND receive_time &lt;= #{endDate}
+        </if>
+    </select>
+
+    <select id="getNextOrderNo" resultType="string">
+        SELECT CONCAT(#{prefix}, LPAD(COALESCE(MAX(CAST(SUBSTRING(order_no, LENGTH(#{prefix}) + 1) AS UNSIGNED)), 0) + 1, 3, '0'))
+        FROM laundry_order
+        WHERE order_no LIKE CONCAT(#{prefix}, '%')
+    </select>
+
+</mapper>

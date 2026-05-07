@@ -1,0 +1,145 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="洗衣店订单管理系统 - 注册">
+    <title>注册 - 洗衣店管理</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/main.css?v=2">
+</head>
+<body>
+    <div class="login-page">
+        <div class="login-container">
+            <div class="login-card">
+                <div class="login-header">
+                    <div class="login-logo">🧺</div>
+                    <h1 class="login-title">创建账户</h1>
+                    <p class="login-subtitle">加入洗衣店管理系统</p>
+                </div>
+
+                <form class="login-form" id="registerForm">
+                    <div class="form-group">
+                        <label class="form-label required" for="username">用户名</label>
+                        <input type="text" class="form-control" id="username" name="username" 
+                               placeholder="请输入用户名" autocomplete="username" required
+                               pattern="^[a-zA-Z0-9_]+$" minlength="3" maxlength="50">
+                        <small class="text-muted">只能包含字母、数字和下划线</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label required" for="password">密码</label>
+                        <input type="password" class="form-control" id="password" name="password" 
+                               placeholder="请输入密码" autocomplete="new-password" required
+                               minlength="6" maxlength="100">
+                        <small class="text-muted">至少6个字符</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label required" for="confirmPassword">确认密码</label>
+                        <input type="password" class="form-control" id="confirmPassword" 
+                               placeholder="请再次输入密码" autocomplete="new-password" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="realName">真实姓名</label>
+                        <input type="text" class="form-control" id="realName" name="realName" 
+                               placeholder="请输入真实姓名" autocomplete="name">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="phone">手机号码</label>
+                        <input type="tel" class="form-control" id="phone" name="phone" 
+                               placeholder="请输入手机号码" autocomplete="tel">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="email">电子邮箱</label>
+                        <input type="email" class="form-control" id="email" name="email" 
+                               placeholder="请输入电子邮箱" autocomplete="email">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-lg" id="registerBtn">
+                        <span id="registerText">注 册</span>
+                        <span id="registerLoading" class="hidden">注册中...</span>
+                    </button>
+                </form>
+
+                <div class="login-footer">
+                    <p>已有账户？ <a href="login.html">立即登录</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/utils.js"></script>
+    <script src="../js/components.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+        if (auth.isLoggedIn()) {
+            window.location.href = 'dashboard.html';
+        }
+
+        const registerForm = document.getElementById('registerForm');
+        const registerBtn = document.getElementById('registerBtn');
+        const registerText = document.getElementById('registerText');
+        const registerLoading = document.getElementById('registerLoading');
+
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const realName = document.getElementById('realName').value.trim();
+            const phone = document.getElementById('phone').value.trim();
+            const email = document.getElementById('email').value.trim();
+
+            if (!username || username.length < 3) {
+                Toast.warning('验证提示', '用户名至少3个字符');
+                return;
+            }
+
+            if (!password || password.length < 6) {
+                Toast.warning('验证提示', '密码至少6个字符');
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                Toast.warning('验证提示', '两次输入的密码不一致');
+                return;
+            }
+
+            if (phone && !utils.isValidPhone(phone)) {
+                Toast.warning('验证提示', '手机号码格式不正确');
+                return;
+            }
+
+            if (email && !utils.isValidEmail(email)) {
+                Toast.warning('验证提示', '邮箱格式不正确');
+                return;
+            }
+
+            registerBtn.disabled = true;
+            registerText.classList.add('hidden');
+            registerLoading.classList.remove('hidden');
+
+            try {
+                await auth.register({ username, password, realName, phone, email });
+                Toast.success('成功', '注册成功！');
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 1500);
+            } catch (error) {
+                Toast.error('注册失败', error.message);
+                registerBtn.disabled = false;
+                registerText.classList.remove('hidden');
+                registerLoading.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
